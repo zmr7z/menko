@@ -27,14 +27,14 @@
   const COUNTDOWN = 3;
   const PLAY_URL = "https://zmr7z.github.io/menko/";
 
-  /** Stages 1..5 then rock challenge */
+  /** Stages 1..5 then rock (flip only at 100) */
   const STAGES = [
-    { id: 1, name: "練習めんこ", need: 16, kind: "card", cls: "" },
-    { id: 2, name: "路地の強敵", need: 26, kind: "card", cls: "mid" },
-    { id: 3, name: "商店街ボス", need: 36, kind: "card", cls: "mid" },
-    { id: 4, name: "祭りの親方", need: 48, kind: "card", cls: "boss" },
-    { id: 5, name: "伝説の札", need: 58, kind: "card", cls: "boss" },
-    { id: 6, name: "最後の岩", need: 999, kind: "rock", cls: "" }, // need unused; always score post
+    { id: 1, name: "練習めんこ", need: 32, kind: "card", cls: "" },
+    { id: 2, name: "路地の強敵", need: 44, kind: "card", cls: "mid" },
+    { id: 3, name: "商店街ボス", need: 56, kind: "card", cls: "mid" },
+    { id: 4, name: "祭りの親方", need: 68, kind: "card", cls: "boss" },
+    { id: 5, name: "伝説の札", need: 80, kind: "card", cls: "boss" },
+    { id: 6, name: "最後の岩", need: 100, kind: "rock", cls: "" },
   ];
 
   let mode = "pc";
@@ -62,10 +62,9 @@
     return current().kind === "rock";
   }
 
-  /** PC mouse scores a bit higher raw, mild bump only */
   function effectiveNeed(stage = current()) {
-    if (stage.kind === "rock") return stage.need;
-    return mode === "pc" ? Math.round(stage.need * 1.08) : stage.need;
+    if (stage.kind === "rock") return 100;
+    return mode === "pc" ? Math.round(stage.need * 1.12) : stage.need;
   }
 
   function refreshStageUI() {
@@ -73,11 +72,11 @@
     foeNameEl.textContent = s.name;
     if (isRock()) {
       stageEl.textContent = "岩チャレンジ";
-      needEl.textContent = "計測";
+      needEl.textContent = "必要 100";
       cardFoe.classList.add("hidden");
       cardFoe.style.visibility = "hidden";
       rock.classList.remove("hidden");
-      rock.classList.remove("cracked", "shake");
+      rock.classList.remove("cracked", "shake", "flipped");
       rock.setAttribute("aria-hidden", "false");
     } else {
       stageEl.textContent = `STAGE ${s.id} / 5`;
@@ -182,19 +181,27 @@
     if (performance.now() < measureUntil) raf = requestAnimationFrame(tickMeter);
   }
 
+  /** Soft cap: strong input tops out near 90s; true 100 is rare */
+  function softPower(raw) {
+    if (raw <= 0) return 0;
+    const s = 100 * (1 - Math.exp(-raw / 52));
+    if (raw >= 170 && s >= 99.2) return 100;
+    return Math.min(99, Math.round(s));
+  }
+
   function livePower() {
     if (mode === "phone") {
-      // Peak only — many medium shakes must not sum into a clear
+      // Peak only — repeated medium shakes do not stack
       if (!samples.length) return 0;
       const peak = Math.max(...samples);
-      return Math.min(100, peak * 5.4);
+      return softPower(peak * 3.05);
     }
-    // PC: sustained whip still helps, but short bursts count more
-    const recent = samples.slice(-32);
+    // PC: sustained whip required; short flicks score low
+    const recent = samples.slice(-36);
     if (!recent.length) return 0;
     const avg = recent.reduce((s, n) => s + n, 0) / recent.length;
     const nonzero = recent.filter((n) => n > 0).length / recent.length;
-    return Math.min(100, (avg / 28) * (0.72 + 0.28 * nonzero));
+    return softPower((avg / 40) * (0.55 + 0.45 * nonzero));
   }
 
   function calcPower() {
@@ -267,7 +274,7 @@
     let left = COUNTDOWN;
     hintEl.textContent = String(left);
     subEl.textContent = isRock()
-      ? "計測のみ · 振り続けろ"
+      ? "岩は勢い100でひっくり返す"
       : `${current().name} · 必要 ${effectiveNeed()}+`;
 
     const timer = setInterval(() => {
@@ -312,20 +319,23 @@
 
     setTimeout(() => {
       if (isRock()) {
+        const flipped = youPower >= 100;
         rock.classList.add("shake");
-        if (youPower >= 80) rock.classList.add("cracked");
+        if (flipped) rock.classList.add("flipped");
+        else if (youPower >= 85) rock.classList.add("cracked");
         const share = [
           `めんこ・オブ・シェイク 岩チャレンジ`,
-          `威力スコア ${Math.round(youPower)}`,
-          `ボスまで突破したあとの計測`,
+          flipped ? `勢い100！岩をひっくり返した` : `勢い ${Math.round(youPower)} / 必要 100`,
           PLAY_URL,
           `#めんこオブシェイク #ludofolio`,
         ].join("\n");
         showResult({
           eyebrow: "岩チャレンジ",
-          title: youPower >= 80 ? "岩がひび割れた！" : "計測完了",
-          color: "var(--you)",
-          detail: "岩はひっくり返せなくてもOK。この数値を自慢しよう。",
+          title: flipped ? "岩をひっくり返した！" : youPower >= 85 ? "岩がひび割れた" : "計測完了",
+          color: flipped ? "var(--ok)" : "var(--you)",
+          detail: flipped
+            ? "勢い100到達。岩めんこクリア！"
+            : `勢い ${Math.round(youPower)}。100のときだけひっくり返る。`,
           shareText: share,
           outcome: "rock",
           power: youPower,
