@@ -81,7 +81,7 @@
       rock.setAttribute("aria-hidden", "false");
     } else {
       stageEl.textContent = `STAGE ${s.id} / 5`;
-      needEl.textContent = `（目安 ${effectiveNeed(s)}+${mode === "pc" ? " · PC厳しめ" : ""}）`;
+      needEl.textContent = `（目安 ${effectiveNeed(s)}+）`;
       cardFoe.style.visibility = "visible";
       cardFoe.classList.remove("hidden", "mid", "boss", "flipped", "hit");
       if (s.cls) cardFoe.classList.add(s.cls);
@@ -100,8 +100,8 @@
     if (phase === "idle") {
       hintEl.textContent = mode === "phone" ? "スタート後、振ってひっくり返せ" : "スタート後、押しながら激しく振り回せ";
       subEl.textContent = manual
-        ? "手動切替 · 失敗1回でゲームオーバー" + (mode === "pc" ? " · PCは判定厳しめ" : "")
-        : (mode === "phone" ? "自動選択: スマホ" : "自動選択: PC（判定厳しめ）") + " · 失敗1回でゲームオーバー";
+        ? "手動切替 · 失敗1回でゲームオーバー"
+        : (mode === "phone" ? "自動選択: スマホ" : "自動選択: PC") + " · 失敗1回でゲームオーバー";
       refreshStageUI();
     }
   }
@@ -336,7 +336,7 @@
         const more = stageIndex < STAGES.length - 2;
         const share = [
           `めんこ・オブ・シェイク STAGE ${cleared}「${current().name}」クリア！`,
-          `勢い ${Math.round(youPower)} / 必要 ${need}${mode === "pc" ? " (PC)" : ""}`,
+          `勢い ${Math.round(youPower)} / 必要 ${need}`,
           more ? `次は STAGE ${cleared + 1}` : `全ボス突破。次は岩チャレンジ`,
           PLAY_URL,
           `#めんこオブシェイク #ludofolio`,
@@ -355,7 +355,7 @@
         const share = [
           `めんこ・オブ・シェイク GAME OVER`,
           `STAGE ${current().id}「${current().name}」で失敗`,
-          `勢い ${Math.round(youPower)} / 必要 ${need}${mode === "pc" ? " (PC)" : ""}`,
+          `勢い ${Math.round(youPower)} / 必要 ${need}`,
           PLAY_URL,
           `#めんこオブシェイク #ludofolio`,
         ].join("\n");
