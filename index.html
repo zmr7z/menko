@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#111827" />
+  <meta property="og:title" content="ふりめんこ" />
+  <meta property="og:description" content="スマホは振る、PCはマウスを振り回す。速さで勝つめんこ。" />
+  <title>ふりめんこ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="top">
+      <div class="brand">ふりめんこ</div>
+      <div class="scoreline"><span id="wins">0</span>勝 <span id="losses">0</span>敗</div>
+    </header>
+
+    <div class="mode-tabs" role="tablist" aria-label="操作モード">
+      <button type="button" class="tab" id="tab-phone" role="tab" aria-selected="false" data-mode="phone">スマホ（振る）</button>
+      <button type="button" class="tab" id="tab-pc" role="tab" aria-selected="false" data-mode="pc">PC（マウス）</button>
+    </div>
+
+    <main class="stage">
+      <div class="arena" id="arena">
+        <div class="card foe" id="card-foe">
+          <div class="face front">敵</div>
+          <div class="face back">裏</div>
+        </div>
+        <div class="card you" id="card-you">
+          <div class="face front">自</div>
+          <div class="face back">裏</div>
+        </div>
+      </div>
+
+      <p class="power-label">勢い</p>
+      <div class="meter" aria-hidden="true"><i id="meter-fill"></i></div>
+      <p class="hint" id="hint">モードを確認してスタート</p>
+      <p class="subhint" id="subhint"></p>
+    </main>
+
+    <div class="actions">
+      <button type="button" class="btn primary" id="btn-start">はじめる</button>
+      <button type="button" class="btn ghost" id="btn-perm" hidden>センサー許可</button>
+      <a class="btn ghost" href="https://zmr7z.github.io/ludofolio/">ハブ</a>
+      <a class="btn ghost" href="changelog.html">更新履歴</a>
+    </div>
+
+    <div id="result" class="overlay hidden">
+      <div class="panel">
+        <p class="eyebrow" id="result-eyebrow">結果</p>
+        <h2 id="result-title">勝ち</h2>
+        <p id="result-detail"></p>
+        <div class="actions">
+          <button type="button" class="btn primary" id="btn-again">もう一回</button>
+          <button type="button" class="btn ghost" id="btn-close">閉じる</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>
