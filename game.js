@@ -156,10 +156,19 @@
 
   function onMotion(e) {
     if (phase !== "measure" || mode !== "phone") return;
-    const a = e.accelerationIncludingGravity || e.acceleration;
-    if (!a) return;
-    const mag = Math.hypot(a.x || 0, a.y || 0, a.z || 0);
-    samples.push(Math.max(0, mag - 10.2) * 90);
+    // Prefer linear acceleration so gravity does not pad every sample
+    const lin = e.acceleration;
+    let mag;
+    if (lin && (lin.x != null || lin.y != null || lin.z != null)) {
+      mag = Math.hypot(lin.x || 0, lin.y || 0, lin.z || 0);
+    } else {
+      const g = e.accelerationIncludingGravity;
+      if (!g) return;
+      mag = Math.max(0, Math.hypot(g.x || 0, g.y || 0, g.z || 0) - 9.8);
+    }
+    // Ignore micro jitter; only spikes count
+    if (mag < 1.5) return;
+    samples.push(mag);
   }
 
   function tickMeter() {
@@ -175,9 +184,10 @@
 
   function livePower() {
     if (mode === "phone") {
-      const recent = samples.slice(-18);
-      const avg = recent.length ? recent.reduce((s, n) => s + n, 0) / recent.length : 0;
-      return Math.min(100, avg);
+      // Peak only — many medium shakes must not sum into a clear
+      if (!samples.length) return 0;
+      const peak = Math.max(...samples);
+      return Math.min(100, peak * 5.4);
     }
     // PC: sustained whip still helps, but short bursts count more
     const recent = samples.slice(-32);
