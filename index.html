@@ -23,13 +23,13 @@
       </div>
     </header>
 
-    <main class="stage">
-      <div class="stage-bar">
-        <span id="stage-label">STAGE 1 / 5</span>
-        <strong id="foe-name">練習めんこ</strong>
-        <span id="need-label"></span>
-      </div>
+    <div class="stage-bar">
+      <span id="stage-label">STAGE 1 / 5</span>
+      <strong id="foe-name">練習めんこ</strong>
+      <span id="need-label"></span>
+    </div>
 
+    <main class="stage">
       <div class="arena" id="arena">
         <div class="card foe" id="card-foe">
           <div class="face front" id="foe-label">敵</div>
@@ -41,11 +41,13 @@
         </div>
         <div class="rock hidden" id="rock" aria-hidden="true">岩</div>
       </div>
+    </main>
 
+    <div class="hud">
       <div class="meter" aria-hidden="true"><i id="meter-fill"></i></div>
       <p class="hint" id="hint">スタート後、振ってひっくり返せ</p>
-      <p class="subhint" id="subhint">失敗1回でゲームオーバー</p>
-    </main>
+      <p class="subhint" id="subhint">失敗1回でアウト</p>
+    </div>
 
     <div class="actions">
       <button type="button" class="btn primary" id="btn-start">はじめる</button>

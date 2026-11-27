@@ -9,6 +9,8 @@
   --ok: #34d399;
   --line: #374151;
   --safe: env(safe-area-inset-bottom, 0px);
+  --card-w: clamp(72px, 22vmin, 104px);
+  --card-h: clamp(100px, 30vmin, 142px);
 }
 
 * {
@@ -31,33 +33,37 @@ body {
   width: min(480px, 100%);
   height: 100%;
   margin: 0 auto;
-  padding: max(10px, env(safe-area-inset-top)) 14px calc(12px + var(--safe));
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  padding: max(8px, env(safe-area-inset-top)) 12px calc(10px + var(--safe));
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
+  gap: 6px;
 }
 
 .top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  min-width: 0;
 }
 
 .brand {
   font-family: "Archivo Black", sans-serif;
-  font-size: clamp(0.82rem, 3.4vw, 1rem);
+  font-size: clamp(0.72rem, 3.2vw, 0.95rem);
   letter-spacing: 0.01em;
-  line-height: 1.15;
+  line-height: 1.1;
   flex: 1;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mode-tabs {
   display: inline-grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  padding: 3px;
+  gap: 3px;
+  padding: 2px;
   background: #0b1220;
   border-radius: 999px;
   border: 1px solid var(--line);
@@ -68,11 +74,11 @@ body {
   appearance: none;
   border: 0;
   border-radius: 999px;
-  padding: 8px 12px;
+  padding: 7px 10px;
   background: transparent;
   color: var(--muted);
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 800;
   cursor: pointer;
   white-space: nowrap;
@@ -83,43 +89,44 @@ body {
   color: var(--ink);
 }
 
-.stage {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  gap: 8px;
-}
-
 .stage-bar {
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: baseline;
-  gap: 8px;
-  min-height: 1.4em;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) minmax(0, auto);
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 
 .stage-bar span {
   color: var(--muted);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .stage-bar strong {
   font-family: "Archivo Black", sans-serif;
-  font-size: clamp(1rem, 4.2vw, 1.25rem);
+  font-size: clamp(0.9rem, 3.8vw, 1.15rem);
   color: #fde68a;
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+}
+
+.stage {
+  min-height: 0;
+  display: flex;
 }
 
 .arena {
   position: relative;
   flex: 1;
   min-height: 0;
+  width: 100%;
   border-radius: 16px;
   border: 1px solid var(--line);
   background: radial-gradient(circle at 50% 40%, #243247, #111827 70%);
@@ -131,23 +138,26 @@ body {
   box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.55);
 }
 
+/* Side-by-side so cards never stack on top of each other in short frames */
 .card {
   position: absolute;
-  width: min(100px, 28vw);
-  height: min(138px, 38vw);
-  left: 50%;
+  top: 50%;
+  width: var(--card-w);
+  height: var(--card-h);
+  margin-top: calc(var(--card-h) / -2);
   transform-style: preserve-3d;
   transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.2, 1);
 }
 
 .card.you {
-  top: 54%;
-  margin-left: calc(min(100px, 28vw) / -2);
+  left: 18%;
+  transform: translateX(-10%) rotate(-8deg);
 }
 
 .card.foe {
-  top: 10%;
-  margin-left: calc(min(100px, 28vw) / -2);
+  right: 18%;
+  left: auto;
+  transform: translateX(10%) rotate(8deg);
 }
 
 .face {
@@ -159,7 +169,7 @@ body {
   display: grid;
   place-items: center;
   font-family: "Archivo Black", sans-serif;
-  font-size: clamp(1.5rem, 6vw, 2rem);
+  font-size: clamp(1.25rem, 5vmin, 1.85rem);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
 }
 
@@ -183,25 +193,29 @@ body {
   transform: rotateY(180deg);
 }
 
-.card.flipped {
-  transform: rotateY(180deg);
+.card.you.flipped {
+  transform: translateX(-10%) rotate(-8deg) rotateY(180deg);
+}
+
+.card.foe.flipped {
+  transform: translateX(10%) rotate(8deg) rotateY(180deg);
 }
 
 .card.you.slam {
-  animation: slam 0.35s ease;
+  animation: slamYou 0.35s ease;
 }
 
 .card.foe.hit {
-  animation: hit 0.5s ease;
+  animation: hitFoe 0.5s ease;
 }
 
 .rock {
   position: absolute;
   left: 50%;
-  top: 18%;
-  width: min(120px, 34vw);
-  height: min(100px, 28vw);
-  margin-left: calc(min(120px, 34vw) / -2);
+  top: 50%;
+  width: min(120px, 34vmin);
+  height: min(100px, 28vmin);
+  transform: translate(-50%, -50%);
   border-radius: 42% 48% 40% 55% / 48% 40% 55% 45%;
   background:
     radial-gradient(circle at 30% 28%, #9ca3af, transparent 40%),
@@ -221,7 +235,7 @@ body {
 }
 
 .rock.shake {
-  animation: hit 0.45s ease;
+  animation: hitFoe 0.45s ease;
 }
 
 .rock.cracked {
@@ -254,16 +268,22 @@ body {
   color: #064e3b;
 }
 
-@keyframes slam {
-  0% { transform: translateY(0) scale(1); }
-  40% { transform: translateY(-28px) scale(1.05); }
-  100% { transform: translateY(0) scale(1); }
+@keyframes slamYou {
+  0% { transform: translateX(-10%) rotate(-8deg) scale(1); }
+  40% { transform: translateX(8%) rotate(-2deg) scale(1.06); }
+  100% { transform: translateX(-10%) rotate(-8deg) scale(1); }
 }
 
-@keyframes hit {
-  0%, 100% { transform: translateX(0) rotate(0); }
-  30% { transform: translateX(-10px) rotate(-8deg); }
-  60% { transform: translateX(14px) rotate(10deg); }
+@keyframes hitFoe {
+  0%, 100% { transform: translateX(10%) rotate(8deg); }
+  30% { transform: translateX(18%) rotate(16deg); }
+  60% { transform: translateX(4%) rotate(2deg); }
+}
+
+.hud {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
 }
 
 .meter {
@@ -272,7 +292,6 @@ body {
   background: #0b1220;
   border: 1px solid var(--line);
   overflow: hidden;
-  flex-shrink: 0;
 }
 
 .meter i {
@@ -285,25 +304,30 @@ body {
 
 .hint {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 800;
   text-align: center;
-  line-height: 1.3;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .subhint {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   color: var(--muted);
   text-align: center;
-  line-height: 1.3;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  flex-shrink: 0;
+  gap: 6px;
 }
 
 .actions .btn {
@@ -319,7 +343,7 @@ body {
   appearance: none;
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 14px 14px;
+  padding: 12px 14px;
   font: inherit;
   font-weight: 800;
   text-decoration: none;
@@ -345,13 +369,12 @@ body {
   display: flex;
   justify-content: center;
   gap: 18px;
-  flex-shrink: 0;
 }
 
 .foot-links a {
   color: var(--muted);
   text-decoration: none;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 700;
 }
 
@@ -399,6 +422,27 @@ body {
 .panel p {
   color: #d1d5db;
   margin: 0;
+}
+
+/* Embedded / short frames: shrink chrome, keep cards apart */
+@media (max-height: 700px) {
+  #app {
+    gap: 4px;
+    padding-top: max(6px, env(safe-area-inset-top));
+  }
+  .brand { font-size: 0.72rem; }
+  .tab { padding: 6px 8px; font-size: 0.68rem; }
+  .hint { font-size: 0.82rem; }
+  .btn { padding: 10px 12px; }
+  .foot-links { display: none; }
+}
+
+@media (max-height: 560px) {
+  :root {
+    --card-w: clamp(64px, 20vmin, 88px);
+    --card-h: clamp(88px, 28vmin, 120px);
+  }
+  .subhint { display: none; }
 }
 
 @media (min-width: 900px) and (pointer: fine) {
