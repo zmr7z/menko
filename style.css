@@ -230,6 +230,7 @@ body {
   z-index: 2;
 }
 
+.card.hidden,
 .rock.hidden {
   display: none;
 }
