@@ -29,11 +29,11 @@
 
   /** Stages 1..5 then rock challenge */
   const STAGES = [
-    { id: 1, name: "練習めんこ", need: 22, kind: "card", cls: "" },
-    { id: 2, name: "路地の強敵", need: 34, kind: "card", cls: "mid" },
-    { id: 3, name: "商店街ボス", need: 46, kind: "card", cls: "mid" },
-    { id: 4, name: "祭りの親方", need: 58, kind: "card", cls: "boss" },
-    { id: 5, name: "伝説の札", need: 70, kind: "card", cls: "boss" },
+    { id: 1, name: "練習めんこ", need: 16, kind: "card", cls: "" },
+    { id: 2, name: "路地の強敵", need: 26, kind: "card", cls: "mid" },
+    { id: 3, name: "商店街ボス", need: 36, kind: "card", cls: "mid" },
+    { id: 4, name: "祭りの親方", need: 48, kind: "card", cls: "boss" },
+    { id: 5, name: "伝説の札", need: 58, kind: "card", cls: "boss" },
     { id: 6, name: "最後の岩", need: 999, kind: "rock", cls: "" }, // need unused; always score post
   ];
 
@@ -62,10 +62,10 @@
     return current().kind === "rock";
   }
 
-  /** PC mouse scores higher raw px/s, so raise the bar */
+  /** PC mouse scores a bit higher raw, mild bump only */
   function effectiveNeed(stage = current()) {
     if (stage.kind === "rock") return stage.need;
-    return mode === "pc" ? Math.round(stage.need * 1.35) : stage.need;
+    return mode === "pc" ? Math.round(stage.need * 1.08) : stage.need;
   }
 
   function refreshStageUI() {
@@ -166,8 +166,8 @@
 
   function tickMeter() {
     if (phase !== "measure") return;
-    // Idle decay on PC so one flick doesn't fill the bar
-    if (mode === "pc" && (!mouseActive || (lastMouse && performance.now() - lastMouse.t > 120))) {
+    // Mild idle decay on PC (short pause OK)
+    if (mode === "pc" && (!mouseActive || (lastMouse && performance.now() - lastMouse.t > 200))) {
       samples.push(0);
     }
     const score = livePower();
@@ -181,12 +181,12 @@
       const avg = recent.length ? recent.reduce((s, n) => s + n, 0) / recent.length : 0;
       return Math.min(100, avg);
     }
-    // PC: need sustained whipping — mean of last window, harsh scale
-    const recent = samples.slice(-40);
-    if (recent.length < 8) return Math.min(100, (recent.reduce((s, n) => s + n, 0) / 40) / 42);
+    // PC: sustained whip still helps, but short bursts count more
+    const recent = samples.slice(-32);
+    if (!recent.length) return 0;
     const avg = recent.reduce((s, n) => s + n, 0) / recent.length;
     const nonzero = recent.filter((n) => n > 0).length / recent.length;
-    return Math.min(100, (avg / 38) * (0.55 + 0.45 * nonzero));
+    return Math.min(100, (avg / 28) * (0.72 + 0.28 * nonzero));
   }
 
   function calcPower() {
