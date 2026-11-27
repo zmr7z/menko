@@ -355,6 +355,11 @@ body {
   align-items: center;
 }
 
+/* display:flex on .btn would otherwise override the hidden attribute */
+[hidden] {
+  display: none !important;
+}
+
 .btn.primary {
   background: var(--you);
   color: #111;
