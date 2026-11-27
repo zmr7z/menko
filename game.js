@@ -62,6 +62,12 @@
     return current().kind === "rock";
   }
 
+  /** PC mouse scores higher raw px/s, so raise the bar */
+  function effectiveNeed(stage = current()) {
+    if (stage.kind === "rock") return stage.need;
+    return mode === "pc" ? Math.round(stage.need * 1.35) : stage.need;
+  }
+
   function refreshStageUI() {
     const s = current();
     foeNameEl.textContent = s.name;
@@ -75,7 +81,7 @@
       rock.setAttribute("aria-hidden", "false");
     } else {
       stageEl.textContent = `STAGE ${s.id} / 5`;
-      needEl.textContent = `（目安 ${s.need}+）`;
+      needEl.textContent = `（目安 ${effectiveNeed(s)}+${mode === "pc" ? " · PC厳しめ" : ""}）`;
       cardFoe.style.visibility = "visible";
       cardFoe.classList.remove("hidden", "mid", "boss", "flipped", "hit");
       if (s.cls) cardFoe.classList.add(s.cls);
@@ -92,10 +98,11 @@
     tabPc.setAttribute("aria-selected", mode === "pc" ? "true" : "false");
     btnPerm.hidden = mode !== "phone";
     if (phase === "idle") {
-      hintEl.textContent = mode === "phone" ? "スタート後、振ってひっくり返せ" : "スタート後、マウスを振り回せ";
+      hintEl.textContent = mode === "phone" ? "スタート後、振ってひっくり返せ" : "スタート後、押しながら激しく振り回せ";
       subEl.textContent = manual
-        ? "手動切替 · 失敗1回でゲームオーバー"
-        : (mode === "phone" ? "自動選択: スマホ" : "自動選択: PC") + " · 失敗1回でゲームオーバー";
+        ? "手動切替 · 失敗1回でゲームオーバー" + (mode === "pc" ? " · PCは判定厳しめ" : "")
+        : (mode === "phone" ? "自動選択: スマホ" : "自動選択: PC（判定厳しめ）") + " · 失敗1回でゲームオーバー";
+      refreshStageUI();
     }
   }
 
@@ -133,7 +140,13 @@
     if (phase !== "measure" || mode !== "pc" || !mouseActive || !lastMouse) return;
     const now = performance.now();
     const dt = Math.max(0.008, (now - lastMouse.t) / 1000);
-    const speed = Math.hypot(e.clientX - lastMouse.x, e.clientY - lastMouse.y) / dt;
+    const dist = Math.hypot(e.clientX - lastMouse.x, e.clientY - lastMouse.y);
+    // Ignore tiny jitter; cap insane single-frame spikes
+    if (dist < 4) {
+      lastMouse = { x: e.clientX, y: e.clientY, t: now };
+      return;
+    }
+    const speed = Math.min(4500, dist / dt);
     samples.push(speed);
     lastMouse = { x: e.clientX, y: e.clientY, t: now };
   }
@@ -153,17 +166,31 @@
 
   function tickMeter() {
     if (phase !== "measure") return;
-    const recent = samples.slice(-18);
-    const avg = recent.length ? recent.reduce((s, n) => s + n, 0) / recent.length : 0;
-    const score = mode === "phone" ? avg : avg / 18;
-    setMeter(Math.min(100, score));
+    // Idle decay on PC so one flick doesn't fill the bar
+    if (mode === "pc" && (!mouseActive || (lastMouse && performance.now() - lastMouse.t > 120))) {
+      samples.push(0);
+    }
+    const score = livePower();
+    setMeter(score);
     if (performance.now() < measureUntil) raf = requestAnimationFrame(tickMeter);
   }
 
+  function livePower() {
+    if (mode === "phone") {
+      const recent = samples.slice(-18);
+      const avg = recent.length ? recent.reduce((s, n) => s + n, 0) / recent.length : 0;
+      return Math.min(100, avg);
+    }
+    // PC: need sustained whipping — mean of last window, harsh scale
+    const recent = samples.slice(-40);
+    if (recent.length < 8) return Math.min(100, (recent.reduce((s, n) => s + n, 0) / 40) / 42);
+    const avg = recent.reduce((s, n) => s + n, 0) / recent.length;
+    const nonzero = recent.filter((n) => n > 0).length / recent.length;
+    return Math.min(100, (avg / 38) * (0.55 + 0.45 * nonzero));
+  }
+
   function calcPower() {
-    const recent = samples.slice(-24);
-    const raw = recent.length ? recent.reduce((s, n) => s + n, 0) / recent.length : 0;
-    return Math.min(100, mode === "phone" ? raw : raw / 16);
+    return livePower();
   }
 
   async function ensureMotionPermission() {
@@ -233,7 +260,7 @@
     hintEl.textContent = String(left);
     subEl.textContent = isRock()
       ? "岩はひっくり返せなくてOK。威力を計測する"
-      : `${current().name} をひっくり返せ（必要目安 ${current().need}+）`;
+      : `${current().name} をひっくり返せ（必要目安 ${effectiveNeed()}+）`;
 
     const timer = setInterval(() => {
       left -= 1;
@@ -301,14 +328,15 @@
       }
 
       cardFoe.classList.add("hit");
-      const win = youPower >= current().need;
+      const need = effectiveNeed();
+      const win = youPower >= need;
       if (win) {
         cardFoe.classList.add("flipped");
         const cleared = current().id;
         const more = stageIndex < STAGES.length - 2;
         const share = [
           `めんこ・オブ・シェイク STAGE ${cleared}「${current().name}」クリア！`,
-          `勢い ${Math.round(youPower)} / 必要 ${current().need}`,
+          `勢い ${Math.round(youPower)} / 必要 ${need}${mode === "pc" ? " (PC)" : ""}`,
           more ? `次は STAGE ${cleared + 1}` : `全ボス突破。次は岩チャレンジ`,
           PLAY_URL,
           `#めんこオブシェイク #ludofolio`,
@@ -317,7 +345,7 @@
           eyebrow: `STAGE ${cleared} クリア`,
           title: "ひっくり返し成功",
           color: "var(--ok)",
-          detail: `勢い ${Math.round(youPower)} が必要 ${current().need} を超えた。`,
+          detail: `勢い ${Math.round(youPower)} が必要 ${need} を超えた。`,
           shareText: share,
           outcome: "clear",
           power: youPower,
@@ -327,7 +355,7 @@
         const share = [
           `めんこ・オブ・シェイク GAME OVER`,
           `STAGE ${current().id}「${current().name}」で失敗`,
-          `勢い ${Math.round(youPower)} / 必要 ${current().need}`,
+          `勢い ${Math.round(youPower)} / 必要 ${need}${mode === "pc" ? " (PC)" : ""}`,
           PLAY_URL,
           `#めんこオブシェイク #ludofolio`,
         ].join("\n");
@@ -335,7 +363,7 @@
           eyebrow: "ゲームオーバー",
           title: "ひっくり返せなかった",
           color: "var(--danger)",
-          detail: `勢い ${Math.round(youPower)}（必要 ${current().need}+）。1回失敗で終了。`,
+          detail: `勢い ${Math.round(youPower)}（必要 ${need}+）。1回失敗で終了。`,
           shareText: share,
           outcome: "gameover",
           power: youPower,
