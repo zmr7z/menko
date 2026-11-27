@@ -54,6 +54,19 @@ body {
 .scoreline {
   color: var(--muted);
   font-weight: 700;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.foe-name {
+  margin: -4px 0 0;
+  text-align: center;
+  font-family: "Archivo Black", sans-serif;
+  font-size: clamp(1.15rem, 5vw, 1.45rem);
+  letter-spacing: 0.02em;
+  color: #fde68a;
+  line-height: 1.2;
+  text-shadow: 0 2px 0 #0b1220;
 }
 
 .mode-tabs {

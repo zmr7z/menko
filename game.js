@@ -1,5 +1,6 @@
 (() => {
   const stageEl = document.getElementById("stage-label");
+  const foeNameEl = document.getElementById("foe-name");
   const hintEl = document.getElementById("hint");
   const subEl = document.getElementById("subhint");
   const needEl = document.getElementById("need-label");
@@ -63,6 +64,7 @@
 
   function refreshStageUI() {
     const s = current();
+    foeNameEl.textContent = s.name;
     if (isRock()) {
       stageEl.textContent = "岩チャレンジ";
       needEl.textContent = "（ひっくり返し不要・威力計測）";
