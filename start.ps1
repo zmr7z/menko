@@ -4,7 +4,7 @@ $root = $PSScriptRoot
 $listener = [System.Net.HttpListener]::new()
 $listener.Prefixes.Add("http://localhost:$port/")
 $listener.Start()
-Write-Host "ふりめんこ  http://localhost:$port/"
+Write-Host "めんこ・オブ・シェイク  http://localhost:$port/"
 
 $mime = @{
   ".html" = "text/html; charset=utf-8"

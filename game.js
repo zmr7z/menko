@@ -278,11 +278,11 @@
         rock.classList.add("shake");
         if (youPower >= 80) rock.classList.add("cracked");
         const share = [
-          `ふりめんこ 岩チャレンジ`,
+          `めんこ・オブ・シェイク 岩チャレンジ`,
           `威力スコア ${Math.round(youPower)}`,
           `ボスまで突破したあとの計測`,
           PLAY_URL,
-          `#ふりめんこ #ludofolio`,
+          `#めんこオブシェイク #ludofolio`,
         ].join("\n");
         showResult({
           eyebrow: "岩チャレンジ",
@@ -305,11 +305,11 @@
         const cleared = current().id;
         const more = stageIndex < STAGES.length - 2;
         const share = [
-          `ふりめんこ STAGE ${cleared}「${current().name}」クリア！`,
+          `めんこ・オブ・シェイク STAGE ${cleared}「${current().name}」クリア！`,
           `勢い ${Math.round(youPower)} / 必要 ${current().need}`,
           more ? `次は STAGE ${cleared + 1}` : `全ボス突破。次は岩チャレンジ`,
           PLAY_URL,
-          `#ふりめんこ #ludofolio`,
+          `#めんこオブシェイク #ludofolio`,
         ].join("\n");
         showResult({
           eyebrow: `STAGE ${cleared} クリア`,
@@ -323,11 +323,11 @@
       } else {
         cardYou.classList.add("flipped");
         const share = [
-          `ふりめんこ GAME OVER`,
+          `めんこ・オブ・シェイク GAME OVER`,
           `STAGE ${current().id}「${current().name}」で失敗`,
           `勢い ${Math.round(youPower)} / 必要 ${current().need}`,
           PLAY_URL,
-          `#ふりめんこ #ludofolio`,
+          `#めんこオブシェイク #ludofolio`,
         ].join("\n");
         showResult({
           eyebrow: "ゲームオーバー",
