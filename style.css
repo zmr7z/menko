@@ -169,6 +169,65 @@ body {
   animation: hit 0.5s ease;
 }
 
+.rock {
+  position: absolute;
+  left: 50%;
+  top: 18%;
+  width: 120px;
+  height: 100px;
+  margin-left: -60px;
+  border-radius: 42% 48% 40% 55% / 48% 40% 55% 45%;
+  background:
+    radial-gradient(circle at 30% 28%, #9ca3af, transparent 40%),
+    linear-gradient(160deg, #6b7280, #374151 55%, #1f2937);
+  border: 3px solid #0b1220;
+  display: grid;
+  place-items: center;
+  font-family: "Archivo Black", sans-serif;
+  font-size: 1.6rem;
+  color: #e5e7eb;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.4);
+  z-index: 2;
+}
+
+.rock.hidden {
+  display: none;
+}
+
+.rock.shake {
+  animation: hit 0.45s ease;
+}
+
+.rock.cracked {
+  filter: brightness(1.15) saturate(0.7);
+  outline: 2px dashed #fbbf24;
+}
+
+.power-readout {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #0b1220;
+  border: 1px solid var(--line);
+  font-family: "Archivo Black", sans-serif;
+  font-size: 1.35rem;
+  color: var(--you);
+}
+
+.power-readout.hidden {
+  display: none;
+}
+
+.foe.boss .front {
+  background: linear-gradient(160deg, #f9a8d4, #db2777);
+  color: #4a044e;
+}
+
+.foe.mid .front {
+  background: linear-gradient(160deg, #a7f3d0, #059669);
+  color: #064e3b;
+}
+
 @keyframes slam {
   0% { transform: translateY(0) scale(1); }
   40% { transform: translateY(-28px) scale(1.05); }

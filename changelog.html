@@ -6,7 +6,7 @@
   <title>更新履歴 — ふりめんこ</title>
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet" />
   <style>
-    :root { --ink:#0f172a; --muted:#475569; --bg:#0b1220; --panel:#fff; --accent:#f59e0b; }
+    :root { --ink:#0f172a; --muted:#475569; --bg:#0b1220; --panel:#fff; }
     body { margin:0; font-family:"Zen Kaku Gothic New",sans-serif; background:linear-gradient(180deg,#0b1220,#070b14); color:var(--ink); line-height:1.7; }
     .page { width:min(40rem, calc(100% - 2rem)); margin:0 auto; padding:1.5rem 0 3rem; }
     .nav { display:flex; flex-wrap:wrap; gap:.75rem; margin-bottom:1rem; }
@@ -30,12 +30,20 @@
       <p class="intro">新しい順。</p>
     </header>
     <article class="release">
+      <div><span class="ver">v0.2</span><time datetime="2026-11-27">2026.11.27</time></div>
+      <h2>ステージ制・岩チャレンジ</h2>
+      <ul>
+        <li>STAGE1〜5。ひっくり返し失敗でゲームオーバー</li>
+        <li>クリア／ゲームオーバーをXにポスト可能</li>
+        <li>全ボス後は岩チャレンジ。ひっくり返し不要で威力スコアをポスト</li>
+      </ul>
+    </article>
+    <article class="release">
       <div><span class="ver">v0.1</span><time datetime="2026-11-27">2026.11.27</time></div>
       <h2>公開</h2>
       <ul>
-        <li>スマホは振る / PCはマウス振り回し</li>
-        <li>端末に合わせてタブ自動選択（手動切替可）</li>
-        <li>勢いゲージとめんこ勝敗</li>
+        <li>スマホ振る / PCマウス振り回し</li>
+        <li>タブ自動選択</li>
       </ul>
     </article>
   </main>

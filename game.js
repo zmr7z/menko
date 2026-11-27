@@ -1,38 +1,87 @@
 (() => {
-  const winsEl = document.getElementById("wins");
-  const lossesEl = document.getElementById("losses");
+  const stageEl = document.getElementById("stage-label");
   const hintEl = document.getElementById("hint");
   const subEl = document.getElementById("subhint");
+  const needEl = document.getElementById("need-label");
   const meter = document.getElementById("meter-fill");
   const arena = document.getElementById("arena");
   const cardYou = document.getElementById("card-you");
   const cardFoe = document.getElementById("card-foe");
+  const foeLabel = document.getElementById("foe-label");
+  const rock = document.getElementById("rock");
   const result = document.getElementById("result");
   const resultTitle = document.getElementById("result-title");
   const resultDetail = document.getElementById("result-detail");
   const resultEyebrow = document.getElementById("result-eyebrow");
+  const powerReadout = document.getElementById("power-readout");
   const btnStart = document.getElementById("btn-start");
+  const btnNext = document.getElementById("btn-next");
+  const btnShare = document.getElementById("btn-share");
+  const btnRetry = document.getElementById("btn-retry");
   const btnPerm = document.getElementById("btn-perm");
   const tabPhone = document.getElementById("tab-phone");
   const tabPc = document.getElementById("tab-pc");
 
   const WINDOW_MS = 1400;
   const COUNTDOWN = 3;
+  const PLAY_URL = "https://zmr7z.github.io/menko/";
 
-  let mode = "pc"; // phone | pc
-  let wins = 0;
-  let losses = 0;
+  /** Stages 1..5 then rock challenge */
+  const STAGES = [
+    { id: 1, name: "練習めんこ", need: 22, kind: "card", cls: "" },
+    { id: 2, name: "路地の強敵", need: 34, kind: "card", cls: "mid" },
+    { id: 3, name: "商店街ボス", need: 46, kind: "card", cls: "mid" },
+    { id: 4, name: "祭りの親方", need: 58, kind: "card", cls: "boss" },
+    { id: 5, name: "伝説の札", need: 70, kind: "card", cls: "boss" },
+    { id: 6, name: "最後の岩", need: 999, kind: "rock", cls: "" }, // need unused; always score post
+  ];
+
+  let mode = "pc";
+  let stageIndex = 0;
   let phase = "idle"; // idle | countdown | measure | resolve
-  let power = 0;
   let samples = [];
   let raf = 0;
   let measureUntil = 0;
   let motionHandler = null;
   let lastMouse = null;
   let mouseActive = false;
+  let lastShareText = "";
+  let lastOutcome = null; // clear | gameover | rock
+  let lastPower = 0;
 
   function preferPhone() {
     return window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 1;
+  }
+
+  function current() {
+    return STAGES[stageIndex];
+  }
+
+  function isRock() {
+    return current().kind === "rock";
+  }
+
+  function refreshStageUI() {
+    const s = current();
+    if (isRock()) {
+      stageEl.textContent = "岩チャレンジ";
+      needEl.textContent = "（ひっくり返し不要・威力計測）";
+      cardFoe.classList.add("hidden");
+      cardFoe.style.visibility = "hidden";
+      rock.classList.remove("hidden");
+      rock.classList.remove("cracked", "shake");
+      rock.setAttribute("aria-hidden", "false");
+    } else {
+      stageEl.textContent = `STAGE ${s.id} / 5`;
+      needEl.textContent = `（目安 ${s.need}+）`;
+      cardFoe.style.visibility = "visible";
+      cardFoe.classList.remove("hidden", "mid", "boss", "flipped", "hit");
+      if (s.cls) cardFoe.classList.add(s.cls);
+      foeLabel.textContent = s.name.length > 2 ? s.name.slice(0, 2) : s.name;
+      rock.classList.add("hidden");
+      rock.setAttribute("aria-hidden", "true");
+    }
+    cardYou.classList.remove("flipped", "slam");
   }
 
   function setMode(next, manual = false) {
@@ -41,18 +90,15 @@
     tabPc.setAttribute("aria-selected", mode === "pc" ? "true" : "false");
     btnPerm.hidden = mode !== "phone";
     if (phase === "idle") {
-      hintEl.textContent = mode === "phone" ? "スタート後、スマホを振れ！" : "スタート後、アリーナ上でマウスを振り回せ！";
+      hintEl.textContent = mode === "phone" ? "スタート後、振ってひっくり返せ" : "スタート後、マウスを振り回せ";
       subEl.textContent = manual
-        ? "手動で切り替えました"
-        : mode === "phone"
-          ? "端末判定: スマホ向けを自動選択"
-          : "端末判定: PC向けを自動選択";
+        ? "手動切替 · 失敗1回でゲームオーバー"
+        : (mode === "phone" ? "自動選択: スマホ" : "自動選択: PC") + " · 失敗1回でゲームオーバー";
     }
   }
 
   function setMeter(v) {
-    const pct = Math.max(0, Math.min(100, v));
-    meter.style.width = pct + "%";
+    meter.style.width = Math.max(0, Math.min(100, v)) + "%";
   }
 
   function stopListeners() {
@@ -85,9 +131,7 @@
     if (phase !== "measure" || mode !== "pc" || !mouseActive || !lastMouse) return;
     const now = performance.now();
     const dt = Math.max(0.008, (now - lastMouse.t) / 1000);
-    const dx = e.clientX - lastMouse.x;
-    const dy = e.clientY - lastMouse.y;
-    const speed = Math.hypot(dx, dy) / dt; // px/s
+    const speed = Math.hypot(e.clientX - lastMouse.x, e.clientY - lastMouse.y) / dt;
     samples.push(speed);
     lastMouse = { x: e.clientX, y: e.clientY, t: now };
   }
@@ -102,27 +146,27 @@
     const a = e.accelerationIncludingGravity || e.acceleration;
     if (!a) return;
     const mag = Math.hypot(a.x || 0, a.y || 0, a.z || 0);
-    // Resting ~9.8; shake adds spikes
-    const shake = Math.max(0, mag - 10.2);
-    samples.push(shake * 90);
+    samples.push(Math.max(0, mag - 10.2) * 90);
   }
 
   function tickMeter() {
     if (phase !== "measure") return;
     const recent = samples.slice(-18);
     const avg = recent.length ? recent.reduce((s, n) => s + n, 0) / recent.length : 0;
-    // Normalize differently per mode
     const score = mode === "phone" ? avg : avg / 18;
-    power = Math.min(100, score);
-    setMeter(power);
-    if (performance.now() < measureUntil) {
-      raf = requestAnimationFrame(tickMeter);
-    }
+    setMeter(Math.min(100, score));
+    if (performance.now() < measureUntil) raf = requestAnimationFrame(tickMeter);
+  }
+
+  function calcPower() {
+    const recent = samples.slice(-24);
+    const raw = recent.length ? recent.reduce((s, n) => s + n, 0) / recent.length : 0;
+    return Math.min(100, mode === "phone" ? raw : raw / 16);
   }
 
   async function ensureMotionPermission() {
     if (typeof DeviceMotionEvent === "undefined") {
-      throw new Error("このブラウザはモーション非対応です。PCタブを使ってください。");
+      throw new Error("モーション非対応。PCタブを使ってください");
     }
     if (typeof DeviceMotionEvent.requestPermission === "function") {
       const res = await DeviceMotionEvent.requestPermission();
@@ -130,23 +174,64 @@
     }
   }
 
-  function resetCards() {
-    cardYou.classList.remove("flipped", "slam");
-    cardFoe.classList.remove("flipped", "hit");
+  function shareToX() {
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(lastShareText)}`;
+    window.open(url, "_blank", "noopener");
+  }
+
+  function showResult({ eyebrow, title, color, detail, shareText, outcome, power }) {
+    lastOutcome = outcome;
+    lastPower = power || 0;
+    lastShareText = shareText;
+    resultEyebrow.textContent = eyebrow;
+    resultTitle.textContent = title;
+    resultTitle.style.color = color;
+    resultDetail.textContent = detail;
+    if (outcome === "rock") {
+      powerReadout.classList.remove("hidden");
+      powerReadout.textContent = `岩への威力スコア ${Math.round(power)}`;
+    } else {
+      powerReadout.classList.add("hidden");
+    }
+
+    if (outcome === "clear") {
+      btnNext.textContent = stageIndex >= STAGES.length - 2 ? "岩チャレンジへ" : "次のステージ";
+      btnNext.hidden = false;
+      btnRetry.hidden = true;
+    } else if (outcome === "rock") {
+      btnNext.textContent = "もう一回岩";
+      btnNext.hidden = false;
+      btnRetry.hidden = false;
+      btnRetry.textContent = "STAGE1から";
+    } else {
+      // gameover
+      btnNext.hidden = true;
+      btnRetry.hidden = false;
+      btnRetry.textContent = "はじめから";
+    }
+    result.classList.remove("hidden");
+  }
+
+  function startRun() {
+    stageIndex = 0;
+    result.classList.add("hidden");
+    refreshStageUI();
+    startRound();
   }
 
   function startRound() {
     if (phase !== "idle") return;
     result.classList.add("hidden");
-    resetCards();
-    power = 0;
+    refreshStageUI();
     samples = [];
     setMeter(0);
     phase = "countdown";
     btnStart.disabled = true;
     let left = COUNTDOWN;
     hintEl.textContent = String(left);
-    subEl.textContent = mode === "phone" ? "許可済みなら、合図で振れ" : "合図でアリーナをドラッグしまくれ";
+    subEl.textContent = isRock()
+      ? "岩はひっくり返せなくてOK。威力を計測する"
+      : `${current().name} をひっくり返せ（必要目安 ${current().need}+）`;
 
     const timer = setInterval(() => {
       left -= 1;
@@ -162,7 +247,6 @@
   function beginMeasure() {
     phase = "measure";
     samples = [];
-    power = 0;
     setMeter(0);
     measureUntil = performance.now() + WINDOW_MS;
     arena.classList.add("listening");
@@ -185,45 +269,80 @@
     if (phase !== "measure") return;
     stopListeners();
     phase = "resolve";
-
-    const recent = samples.slice(-24);
-    const raw = recent.length ? recent.reduce((s, n) => s + n, 0) / recent.length : 0;
-    const youPower = Math.min(100, mode === "phone" ? raw : raw / 16);
-    // AI: random but beatable
-    const foePower = 28 + Math.random() * 55;
-
+    const youPower = calcPower();
     setMeter(youPower);
-    hintEl.textContent = "めんこ！";
-    subEl.textContent = `自分 ${youPower.toFixed(0)} / 相手 ${foePower.toFixed(0)}`;
-
     cardYou.classList.add("slam");
+
     setTimeout(() => {
-      cardFoe.classList.add("hit");
-      const win = youPower >= foePower;
-      if (win) {
-        cardFoe.classList.add("flipped");
-        wins += 1;
-        winsEl.textContent = String(wins);
-        resultEyebrow.textContent = "めんこ成立";
-        resultTitle.textContent = "勝ち";
-        resultTitle.style.color = "var(--ok)";
-        resultDetail.textContent = `勢い ${youPower.toFixed(0)} が相手 ${foePower.toFixed(0)} を上回った。`;
-      } else {
-        cardYou.classList.add("flipped");
-        losses += 1;
-        lossesEl.textContent = String(losses);
-        resultEyebrow.textContent = "弾かれた…";
-        resultTitle.textContent = "負け";
-        resultTitle.style.color = "var(--danger)";
-        resultDetail.textContent = `勢い ${youPower.toFixed(0)} では相手 ${foePower.toFixed(0)} に負けた。`;
-      }
-      setTimeout(() => {
-        result.classList.remove("hidden");
+      if (isRock()) {
+        rock.classList.add("shake");
+        if (youPower >= 80) rock.classList.add("cracked");
+        const share = [
+          `ふりめんこ 岩チャレンジ`,
+          `威力スコア ${Math.round(youPower)}`,
+          `ボスまで突破したあとの計測`,
+          PLAY_URL,
+          `#ふりめんこ #ludofolio`,
+        ].join("\n");
+        showResult({
+          eyebrow: "岩チャレンジ",
+          title: youPower >= 80 ? "岩がひび割れた！" : "計測完了",
+          color: "var(--you)",
+          detail: "岩はひっくり返せなくてもOK。この数値を自慢しよう。",
+          shareText: share,
+          outcome: "rock",
+          power: youPower,
+        });
         phase = "idle";
         btnStart.disabled = false;
-        hintEl.textContent = mode === "phone" ? "もう一回振る？" : "もう一回振り回す？";
-        subEl.textContent = "";
-      }, 520);
+        return;
+      }
+
+      cardFoe.classList.add("hit");
+      const win = youPower >= current().need;
+      if (win) {
+        cardFoe.classList.add("flipped");
+        const cleared = current().id;
+        const more = stageIndex < STAGES.length - 2;
+        const share = [
+          `ふりめんこ STAGE ${cleared}「${current().name}」クリア！`,
+          `勢い ${Math.round(youPower)} / 必要 ${current().need}`,
+          more ? `次は STAGE ${cleared + 1}` : `全ボス突破。次は岩チャレンジ`,
+          PLAY_URL,
+          `#ふりめんこ #ludofolio`,
+        ].join("\n");
+        showResult({
+          eyebrow: `STAGE ${cleared} クリア`,
+          title: "ひっくり返し成功",
+          color: "var(--ok)",
+          detail: `勢い ${Math.round(youPower)} が必要 ${current().need} を超えた。`,
+          shareText: share,
+          outcome: "clear",
+          power: youPower,
+        });
+      } else {
+        cardYou.classList.add("flipped");
+        const share = [
+          `ふりめんこ GAME OVER`,
+          `STAGE ${current().id}「${current().name}」で失敗`,
+          `勢い ${Math.round(youPower)} / 必要 ${current().need}`,
+          PLAY_URL,
+          `#ふりめんこ #ludofolio`,
+        ].join("\n");
+        showResult({
+          eyebrow: "ゲームオーバー",
+          title: "ひっくり返せなかった",
+          color: "var(--danger)",
+          detail: `勢い ${Math.round(youPower)}（必要 ${current().need}+）。1回失敗で終了。`,
+          shareText: share,
+          outcome: "gameover",
+          power: youPower,
+        });
+      }
+      phase = "idle";
+      btnStart.disabled = false;
+      hintEl.textContent = win ? "クリア！" : "ゲームオーバー";
+      subEl.textContent = "";
     }, 280);
   }
 
@@ -241,10 +360,16 @@
   btnStart.addEventListener("click", async () => {
     try {
       if (mode === "phone") await ensureMotionPermission();
-      startRound();
+      if (stageIndex === 0 && lastOutcome == null) {
+        startRound();
+      } else if (!result.classList.contains("hidden")) {
+        // ignore
+      } else {
+        startRound();
+      }
     } catch (err) {
       hintEl.textContent = err.message || "センサーを使えません";
-      subEl.textContent = "PCタブに切り替えるか、許可し直してください";
+      subEl.textContent = "PCタブか、許可し直してください";
       btnPerm.hidden = false;
     }
   });
@@ -252,21 +377,36 @@
   btnPerm.addEventListener("click", async () => {
     try {
       await ensureMotionPermission();
-      subEl.textContent = "センサー許可OK。はじめるを押して";
-      hintEl.textContent = "準備できた";
+      hintEl.textContent = "センサー許可OK";
+      subEl.textContent = "はじめるを押して";
     } catch (err) {
       hintEl.textContent = err.message || "許可に失敗";
     }
   });
 
-  document.getElementById("btn-again").addEventListener("click", () => {
+  btnNext.addEventListener("click", () => {
     result.classList.add("hidden");
-    startRound();
+    if (lastOutcome === "clear") {
+      stageIndex += 1;
+      refreshStageUI();
+      startRound();
+    } else if (lastOutcome === "rock") {
+      // retry rock only
+      startRound();
+    }
   });
-  document.getElementById("btn-close").addEventListener("click", () => {
+
+  btnShare.addEventListener("click", shareToX);
+
+  btnRetry.addEventListener("click", () => {
     result.classList.add("hidden");
+    lastOutcome = null;
+    stageIndex = 0;
+    refreshStageUI();
     phase = "idle";
     btnStart.disabled = false;
+    hintEl.textContent = "STAGE 1 からやり直し";
+    subEl.textContent = "はじめるを押して";
   });
 
   window.addEventListener("keydown", (e) => {
@@ -279,12 +419,12 @@
         hintEl.textContent = "やめた";
       }
     }
-    if ((e.code === "Enter" || e.code === "Space") && phase === "idle" && !e.repeat) {
+    if ((e.code === "Enter" || e.code === "Space") && phase === "idle" && result.classList.contains("hidden") && !e.repeat) {
       e.preventDefault();
       btnStart.click();
     }
   });
 
-  // Auto-select mode
   setMode(preferPhone() ? "phone" : "pc", false);
+  refreshStageUI();
 })();
