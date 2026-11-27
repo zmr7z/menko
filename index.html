@@ -17,16 +17,19 @@
   <div id="app">
     <header class="top">
       <div class="brand">めんこ・オブ・シェイク</div>
-      <div class="scoreline" id="stage-label">STAGE 1</div>
+      <div class="mode-tabs" role="tablist" aria-label="操作モード">
+        <button type="button" class="tab" id="tab-phone" role="tab" aria-selected="false">振る</button>
+        <button type="button" class="tab" id="tab-pc" role="tab" aria-selected="false">マウス</button>
+      </div>
     </header>
-    <p class="foe-name" id="foe-name">練習めんこ</p>
-
-    <div class="mode-tabs" role="tablist" aria-label="操作モード">
-      <button type="button" class="tab" id="tab-phone" role="tab" aria-selected="false">スマホ（振る）</button>
-      <button type="button" class="tab" id="tab-pc" role="tab" aria-selected="false">PC（マウス）</button>
-    </div>
 
     <main class="stage">
+      <div class="stage-bar">
+        <span id="stage-label">STAGE 1 / 5</span>
+        <strong id="foe-name">練習めんこ</strong>
+        <span id="need-label"></span>
+      </div>
+
       <div class="arena" id="arena">
         <div class="card foe" id="card-foe">
           <div class="face front" id="foe-label">敵</div>
@@ -39,18 +42,19 @@
         <div class="rock hidden" id="rock" aria-hidden="true">岩</div>
       </div>
 
-      <p class="power-label">勢い <span id="need-label"></span></p>
       <div class="meter" aria-hidden="true"><i id="meter-fill"></i></div>
-      <p class="hint" id="hint">モードを確認してスタート</p>
-      <p class="subhint" id="subhint">1回失敗でゲームオーバー</p>
+      <p class="hint" id="hint">スタート後、振ってひっくり返せ</p>
+      <p class="subhint" id="subhint">失敗1回でゲームオーバー</p>
     </main>
 
     <div class="actions">
       <button type="button" class="btn primary" id="btn-start">はじめる</button>
       <button type="button" class="btn ghost" id="btn-perm" hidden>センサー許可</button>
-      <a class="btn ghost" href="https://zmr7z.github.io/ludofolio/">ハブ</a>
-      <a class="btn ghost" href="changelog.html">更新履歴</a>
     </div>
+    <nav class="foot-links" aria-label="リンク">
+      <a href="https://zmr7z.github.io/ludofolio/">ハブ</a>
+      <a href="changelog.html">更新履歴</a>
+    </nav>
 
     <div id="result" class="overlay hidden">
       <div class="panel">

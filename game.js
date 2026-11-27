@@ -73,7 +73,7 @@
     foeNameEl.textContent = s.name;
     if (isRock()) {
       stageEl.textContent = "岩チャレンジ";
-      needEl.textContent = "（ひっくり返し不要・威力計測）";
+      needEl.textContent = "計測";
       cardFoe.classList.add("hidden");
       cardFoe.style.visibility = "hidden";
       rock.classList.remove("hidden");
@@ -81,7 +81,7 @@
       rock.setAttribute("aria-hidden", "false");
     } else {
       stageEl.textContent = `STAGE ${s.id} / 5`;
-      needEl.textContent = `（目安 ${effectiveNeed(s)}+）`;
+      needEl.textContent = `必要 ${effectiveNeed(s)}+`;
       cardFoe.style.visibility = "visible";
       cardFoe.classList.remove("hidden", "mid", "boss", "flipped", "hit");
       if (s.cls) cardFoe.classList.add(s.cls);
@@ -98,10 +98,8 @@
     tabPc.setAttribute("aria-selected", mode === "pc" ? "true" : "false");
     btnPerm.hidden = mode !== "phone";
     if (phase === "idle") {
-      hintEl.textContent = mode === "phone" ? "スタート後、振ってひっくり返せ" : "スタート後、押しながら激しく振り回せ";
-      subEl.textContent = manual
-        ? "手動切替 · 失敗1回でゲームオーバー"
-        : (mode === "phone" ? "自動選択: スマホ" : "自動選択: PC") + " · 失敗1回でゲームオーバー";
+      hintEl.textContent = mode === "phone" ? "スタート後、端末を振れ" : "スタート後、押しながら振り回せ";
+      subEl.textContent = manual ? "手動切替 · 失敗1回でアウト" : "失敗1回でアウト";
       refreshStageUI();
     }
   }
@@ -259,8 +257,8 @@
     let left = COUNTDOWN;
     hintEl.textContent = String(left);
     subEl.textContent = isRock()
-      ? "岩はひっくり返せなくてOK。威力を計測する"
-      : `${current().name} をひっくり返せ（必要目安 ${effectiveNeed()}+）`;
+      ? "計測のみ · 振り続けろ"
+      : `${current().name} · 必要 ${effectiveNeed()}+`;
 
     const timer = setInterval(() => {
       left -= 1;
